@@ -1,0 +1,58 @@
+2026-07-22 14:53:42 [INFO] [analysis_20260722_145342] === Mulai analisis: dataset.csv | periode 2021-2025 ===
+2026-07-22 14:53:42 [INFO] [preprocessing] Membaca file: uploads/da020875845a45c193a805c812fb38da_dataset.csv
+2026-07-22 14:53:42 [INFO] [preprocessing] Berhasil membaca 66865 baris.
+2026-07-22 14:53:42 [INFO] [preprocessing] Duplikat dihapus: 0 baris.
+2026-07-22 14:53:42 [INFO] [preprocessing] Missing value dihapus: 0 baris.
+2026-07-22 14:53:42 [INFO] [preprocessing] Cleaning: 0 baris dihapus (total_sales negatif).
+2026-07-22 14:53:42 [INFO] [preprocessing] Setelah filter periode: 66865 baris.
+2026-07-22 14:53:42 [INFO] [preprocessing] Melakukan agregasi & feature engineering...
+2026-07-22 14:53:42 [INFO] [preprocessing] Agregasi selesai: 126 produk unik.
+2026-07-22 14:53:42 [INFO] [preprocessing] Standarisasi selesai. Mean=[530.67   7.     2.76], Std=[284.07   3.09   0.56]
+2026-07-22 14:53:42 [INFO] [kmeans] Mencari K optimal pada rentang 2-5 untuk 126 produk...
+2026-07-22 14:53:43 [INFO] [kmeans] K=2 | konvergen di iterasi ke-4 | WCSS=216.4847 | Silhouette=0.4040 | ukuran klaster=[44, 82]
+2026-07-22 14:53:43 [INFO] [kmeans] K=3 | konvergen di iterasi ke-13 | WCSS=164.6794 | Silhouette=0.4301 | ukuran klaster=[21, 78, 27]
+2026-07-22 14:53:43 [INFO] [kmeans] K=4 | konvergen di iterasi ke-8 | WCSS=102.6935 | Silhouette=0.4323 | ukuran klaster=[18, 21, 22, 65]
+2026-07-22 14:53:43 [INFO] [kmeans] K=5 | konvergen di iterasi ke-10 | WCSS=82.1123 | Silhouette=0.3708 | ukuran klaster=[17, 19, 38, 33, 19]
+2026-07-22 14:53:43 [INFO] [kmeans] K optimal terpilih: K=4 (Silhouette Score tertinggi = 0.4323)
+2026-07-22 14:53:43 [INFO] [kmeans] Menjalankan K-Means final dengan K=4...
+2026-07-22 14:53:43 [INFO] [kmeans] K-Means selesai. Konvergen di iterasi ke-8. 4 klaster terbentuk.
+2026-07-22 14:53:43 [INFO] [kmeans]   Cluster 0: 18 produk, centroid(scaled)=[1.892, -0.01, -0.602]
+2026-07-22 14:53:43 [INFO] [kmeans]   Cluster 1: 21 produk, centroid(scaled)=[-0.929, -0.77, 1.768]
+2026-07-22 14:53:43 [INFO] [kmeans]   Cluster 2: 22 produk, centroid(scaled)=[0.52, 1.787, -0.734]
+2026-07-22 14:53:43 [INFO] [kmeans]   Cluster 3: 65 produk, centroid(scaled)=[-0.4, -0.353, -0.156]
+2026-07-22 14:53:43 [INFO] [labeling] Hasil pemetaan klaster -> kondisi penjualan (nearest-archetype):
+2026-07-22 14:53:43 [INFO] [labeling]   Cluster 0 -> 'Produk Laris' (jarak=0.4860)
+2026-07-22 14:53:43 [INFO] [labeling]   Cluster 1 -> 'Produk Musiman' (jarak=0.7598)
+2026-07-22 14:53:43 [INFO] [labeling]   Cluster 2 -> 'Produk Grosir' (jarak=1.3871)
+2026-07-22 14:53:43 [INFO] [labeling]   Cluster 3 -> 'Produk Stabil' (jarak=0.5324)
+2026-07-22 14:53:43 [INFO] [labeling] Distribusi kondisi_penjualan:
+kondisi_penjualan
+Produk Stabil     65
+Produk Grosir     22
+Produk Musiman    21
+Produk Laris      18
+2026-07-22 14:53:43 [INFO] [abc_analysis] Menjalankan ABC Analysis...
+2026-07-22 14:53:43 [INFO] [abc_analysis] Total pendapatan keseluruhan: Rp41,198,092,500
+2026-07-22 14:53:43 [INFO] [abc_analysis] Distribusi kategori ABC: A=77, B=29, C=20
+2026-07-22 14:53:43 [INFO] [abc_analysis]   Kategori A: 77 produk, kontribusi 80.08% dari total pendapatan
+2026-07-22 14:53:43 [INFO] [abc_analysis]   Kategori B: 29 produk, kontribusi 14.94% dari total pendapatan
+2026-07-22 14:53:43 [INFO] [abc_analysis]   Kategori C: 20 produk, kontribusi 4.98% dari total pendapatan
+2026-07-22 14:53:43 [INFO] [abc_analysis] Transisi A->B terjadi pada produk ke-78 ('Aki Kering AHM GTZ6V'), kumulatif=80.67%
+2026-07-22 14:53:43 [INFO] [abc_analysis] Transisi B->C terjadi pada produk ke-107 ('Piringan DPN AHM Scoopy New'), kumulatif=95.44%
+2026-07-22 14:53:43 [INFO] [decision_rules] Menerapkan decision rules (Tabel 3.5)...
+2026-07-22 14:53:43 [INFO] [decision_rules] Distribusi kombinasi kondisi_penjualan x prioritas_abc:
+2026-07-22 14:53:43 [INFO] [decision_rules] 
+kondisi_penjualan  prioritas_abc
+Produk Grosir      A                20
+                   B                 1
+                   C                 1
+Produk Laris       A                 4
+                   B                 3
+                   C                11
+Produk Musiman     A                 9
+                   B                 8
+                   C                 4
+Produk Stabil      A                44
+                   B                17
+                   C                 4
+2026-07-22 14:53:43 [INFO] [analysis_20260722_145342] === Analisis selesai. 126 produk berhasil dianalisis. ===
