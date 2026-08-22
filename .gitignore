@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual Environment
+venv/
+TAgekani/
+.env
+
+# Flask
+instance/
+
+# Uploads
+uploads/
+
+# Logs
+logs/
+*.log
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store

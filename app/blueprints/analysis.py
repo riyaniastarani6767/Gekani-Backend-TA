@@ -282,7 +282,27 @@ def get_history_detail(analysis_id):
         doc['created_at'] = doc['created_at'].isoformat()
 
     return jsonify(doc), 200
+# Tambahkan di app/blueprints/analysis.py, setelah route
+# @analysis_bp.route('/history/<analysis_id>', methods=['GET']) yang sudah ada:
 
+@analysis_bp.route('/history/<analysis_id>', methods=['DELETE'])
+def delete_history(analysis_id):
+    """Hapus satu riwayat analisis (dan filenya kalau masih ada) dari database."""
+    from bson.objectid import ObjectId
+    try:
+        oid = ObjectId(analysis_id)
+    except Exception:
+        return jsonify({"error": "ID analisis tidak valid."}), 400
+
+    doc = get_db().analyses.find_one({"_id": oid})
+    if doc is None:
+        return jsonify({"error": "Analisis tidak ditemukan."}), 404
+
+    result = get_db().analyses.delete_one({"_id": oid})
+    if result.deleted_count == 0:
+        return jsonify({"error": "Gagal menghapus analisis."}), 500
+
+    return jsonify({"status": "ok", "deleted_id": analysis_id}), 200
 
 @analysis_bp.route('/ping', methods=['GET'])
 def ping():

@@ -27,7 +27,6 @@ ARCHETYPE_NAMES = [
     "Produk Grosir",
 ]
 
-
 def _euclidean(a, b):
     return np.sqrt(np.sum((a - b) ** 2))
 
