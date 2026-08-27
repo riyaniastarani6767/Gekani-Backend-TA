@@ -279,3 +279,41 @@ def monthly_revenue(filepath, tahun_awal=None, tahun_akhir=None):
         result.append({"bulan": str(period), "label": label, "total": float(total)})
 
     return result
+def monthly_products(filepath, bulan_awal, bulan_akhir):
+    """
+    Agregasi total_sales per produk per bulan, untuk rentang bulan_awal
+    sampai bulan_akhir (format 'YYYY-MM'). Dipakai untuk halaman Data
+    Produk mode "Per Bulan".
+
+    Return: dict {
+        "months": ["2023-01", "2023-02", ...],  -- urut kronologis
+        "data": {
+            "Nama Produk": {"2023-01": 120000.0, "2023-02": 90000.0, ...},
+            ...
+        }
+    }
+    """
+    df = pd.read_csv(filepath, encoding='utf-8', on_bad_lines='warn')
+    df['total_sales'] = pd.to_numeric(df['total_sales'], errors='coerce')
+    df.dropna(subset=['total_sales'], inplace=True)
+    df = df[df['total_sales'] >= 0]
+
+    df['tanggal'] = pd.to_datetime(df['tanggal'], errors='coerce', dayfirst=True)
+    df.dropna(subset=['tanggal'], inplace=True)
+    df['year_month'] = df['tanggal'].dt.to_period('M')
+
+    periode_awal = pd.Period(bulan_awal, freq='M')
+    periode_akhir = pd.Period(bulan_akhir, freq='M')
+    df = df[(df['year_month'] >= periode_awal) & (df['year_month'] <= periode_akhir)]
+
+    all_months = pd.period_range(periode_awal, periode_akhir, freq='M')
+    months_str = [str(m) for m in all_months]
+
+    grouped = df.groupby(['sub_kategori', 'year_month'])['total_sales'].sum().reset_index()
+
+    data = {}
+    for produk, sub in grouped.groupby('sub_kategori'):
+        monthly_dict = {str(row['year_month']): float(row['total_sales']) for _, row in sub.iterrows()}
+        data[produk] = monthly_dict
+
+    return {"months": months_str, "data": data}

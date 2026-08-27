@@ -129,15 +129,18 @@ def run_analysis():
 
     try:
         df = preprocessing.aggregate_data(filepath, tahun_awal=tahun_awal, tahun_akhir=tahun_akhir)
-        feature_cols = df.attrs['cluster_features']
+        # feature_cols_raw: 5 fitur asli, dipakai labeling.py untuk bikin arketipe
+        feature_cols_raw = df.attrs['cluster_features']
+        # feature_cols_pca: 2 komponen utama hasil PCA, INI yang dipakai K-Means
+        feature_cols_pca = df.attrs['pca_feature_cols']
         jumlah_transaksi = df.attrs['n_transaksi_setelah_cleaning']
 
         tren_bulanan = preprocessing.monthly_revenue(filepath, tahun_awal=tahun_awal, tahun_akhir=tahun_akhir)
 
-        optimal_result = kmeans.find_optimal_k(df, feature_cols)
-        df_kmeans, centroids = kmeans.run_kmeans(df, feature_cols, optimal_result['optimal_k'])
+        optimal_result = kmeans.find_optimal_k(df, feature_cols_pca)
+        df_kmeans, centroids = kmeans.run_kmeans(df, feature_cols_pca, optimal_result['optimal_k'])
 
-        df_labeled = labeling.label_clusters(df_kmeans, feature_cols, centroids)
+        df_labeled = labeling.label_clusters(df_kmeans, feature_cols_raw, centroids)
 
         df_abc = abc_analysis.classify_abc(df)
 
@@ -305,29 +308,21 @@ def delete_history(analysis_id):
 
     return jsonify({"status": "ok", "deleted_id": analysis_id}), 200
 
+@analysis_bp.route('/ping', methods=['GET'])
+def ping():
+    return {"status": "analysis blueprint aktif"}
 @analysis_bp.route('/products/monthly', methods=['GET'])
 def get_products_monthly():
     """
-    Query params:
-      bulan_awal, bulan_akhir: 'YYYY-MM' (opsional, bisa lintas tahun)
-      kategori, kondisi, prioritas, search: sama seperti /products
+    Query params (wajib): bulan_awal, bulan_akhir (format 'YYYY-MM')
+    Query params (opsional): kategori, kondisi, prioritas, search
 
-    Menghitung pendapatan per produk PER BULAN langsung dari file CSV
-    mentah milik analisis TERAKHIR yang berhasil. Badge kategori/kondisi/
-    prioritas tetap diambil dari hasil_segmentasi analisis itu supaya
-    konteksnya konsisten dengan halaman Data Produk versi Ringkasan.
+    Membaca ULANG file dataset asli dari analisis terakhir yang berhasil,
+    lalu menghitung total_sales per produk per bulan pada rentang yang
+    diminta. Berbeda dari /products (yang membaca ringkasan tersimpan),
+    endpoint ini butuh data mentah karena breakdown per bulan tidak
+    disimpan di hasil_segmentasi.
     """
-    latest = get_db().analyses.find_one({"status": "Berhasil"}, sort=[("created_at", -1)])
-    if latest is None:
-        return jsonify({"error": "Belum ada analisis yang berhasil dijalankan."}), 404
-
-    filepath = latest.get('filepath')
-    if not filepath or not os.path.exists(filepath):
-        return jsonify({
-            "error": "File data mentah untuk analisis ini sudah tidak tersedia. "
-                     "Jalankan analisis baru untuk memakai fitur Perbandingan Bulanan."
-        }), 404
-
     bulan_awal = request.args.get('bulan_awal')
     bulan_akhir = request.args.get('bulan_akhir')
     kategori = request.args.get('kategori')
@@ -335,45 +330,49 @@ def get_products_monthly():
     prioritas = request.args.get('prioritas')
     search = request.args.get('search', '').lower()
 
+    if not bulan_awal or not bulan_akhir:
+        return jsonify({"error": "Parameter bulan_awal dan bulan_akhir wajib diisi."}), 400
+
+    latest = get_db().analyses.find_one({"status": "Berhasil"}, sort=[("created_at", -1)])
+    if latest is None:
+        return jsonify({"error": "Belum ada analisis yang berhasil dijalankan."}), 404
+
+    filepath = latest.get('filepath')
+    if not filepath or not os.path.exists(filepath):
+        return jsonify({"error": "File dataset asli tidak ditemukan. Silakan jalankan analisis ulang."}), 404
+
     try:
-        months, monthly_data = preprocessing.monthly_revenue_per_product(
-            filepath, bulan_awal=bulan_awal, bulan_akhir=bulan_akhir
-        )
+        monthly_result = preprocessing.monthly_products(filepath, bulan_awal, bulan_akhir)
     except Exception as e:
-        return jsonify({"error": f"Gagal menghitung data bulanan: {str(e)}"}), 400
+        return jsonify({"error": f"Gagal memproses data bulanan: {str(e)}"}), 400
 
-    hasil_map = {p['nama_produk']: p for p in latest.get('hasil_segmentasi', [])}
+    produk_list = latest.get('hasil_segmentasi', [])
+    produk_lookup = {p['nama_produk']: p for p in produk_list}
 
-    products = []
-    for produk, per_bulan in monthly_data.items():
-        info = hasil_map.get(produk, {})
-        kategori_p = info.get('kategori', '-')
-        kondisi_p = info.get('kondisi_penjualan', '-')
-        prioritas_p = info.get('prioritas_abc', '-')
-
-        if kategori and kategori_p != kategori:
-            continue
-        if kondisi and kondisi_p != kondisi:
-            continue
-        if prioritas and prioritas_p != prioritas:
-            continue
-        if search and search not in produk.lower():
+    result_products = []
+    for nama_produk, monthly_data in monthly_result['data'].items():
+        info = produk_lookup.get(nama_produk)
+        if info is None:
             continue
 
-        products.append({
-            "nama_produk": produk,
-            "kategori": kategori_p,
-            "kondisi_penjualan": kondisi_p,
-            "prioritas_abc": prioritas_p,
-            "monthly": per_bulan,
-            "total": sum(per_bulan.values()),
+        if kategori and info['kategori'] != kategori:
+            continue
+        if kondisi and info['kondisi_penjualan'] != kondisi:
+            continue
+        if prioritas and info['prioritas_abc'] != prioritas:
+            continue
+        if search and search not in nama_produk.lower():
+            continue
+
+        result_products.append({
+            "nama_produk": nama_produk,
+            "kategori": info['kategori'],
+            "kondisi_penjualan": info['kondisi_penjualan'],
+            "prioritas_abc": info['prioritas_abc'],
+            "monthly": monthly_data,
+            "total": sum(monthly_data.values()),
         })
 
-    products.sort(key=lambda p: p['total'], reverse=True)
+    result_products.sort(key=lambda p: p['nama_produk'])
 
-    return jsonify({"months": months, "products": products}), 200
-
-
-@analysis_bp.route('/ping', methods=['GET'])
-def ping():
-    return {"status": "analysis blueprint aktif"}
+    return jsonify({"months": monthly_result['months'], "products": result_products}), 200

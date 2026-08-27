@@ -1,8 +1,8 @@
 """
 decision_rules.py
-Decision rules berdasarkan Tabel 3.5 (Matriks Rekomendasi), BAB III 7.7.
-Mengombinasikan kondisi_penjualan (hasil K-Means + labeling) dengan
-prioritas_abc (hasil ABC Analysis) untuk menghasilkan rekomendasi
+Decision rules berdasarkan Tabel 3.5 (Matriks Rekomendasi -- revisi 4x3),
+BAB III 7.7. Mengombinasikan kondisi_penjualan (hasil K-Means + labeling)
+dengan prioritas_abc (hasil ABC Analysis) untuk menghasilkan rekomendasi
 tindak lanjut pengelolaan persediaan.
 """
 
@@ -11,33 +11,27 @@ import logging
 logger = logging.getLogger("decision_rules")
 
 DECISION_MATRIX = {
-    "Produk Laris": {
-        "A": "Jaga stok dan lakukan promosi",
-        "B": "Cek harga jual produk",
-        "C": "Cek harga jual dan biaya pengadaan",
+    "Produk Harian": {
+        "A": "Stok harus selalu tersedia, karena produk sering dibeli.",
+        "B": "Jaga stok tetap tersedia, sesuai kebutuhan pelanggan.",
+        "C": "Tetap sediakan stok karena tetap sering dicari, tapi coba naikkan sedikit harganya biar untungnya lebih besar.",
     },
-    "Produk Stabil": {
-        "A": "Promosikan produk dan jaga ketersediaan stok",
-        "B": "Pertahankan stok",
-        "C": "Sesuaikan harga jual",
+    "Produk Langka": {
+        "A": "Tetap sediakan, meskipun jarang dibeli, karena harga barangnya tinggi.",
+        "B": "Sediakan dalam jumlah kecil, karena pembeliannya tidak menentu.",
+        "C": "Kurangi jumlah stok, karena jarang dibeli dan nilainya kecil.",
     },
-    "Produk Musiman": {
-        "A": "Siapkan stok dalam jumlah besar sebelum musim penjualan",
-        "B": "Sesuaikan jumlah stok dengan pola permintaan musiman",
-        "C": "Lakukan pembelian hanya pada musim penjualan",
+    "Produk Andalan": {
+        "A": "Utamakan stok, karena produk ini penting dan banyak dibutuhkan pelanggan.",
+        "B": "Pertahankan stok, karena produk ini rutin menyumbang pendapatan toko.",
+        "C": "Kurangi sedikit stoknya, meski tetap termasuk produk penting.",
     },
-    "Jarang Terjual": {
-        "A": "Jaga stok dalam jumlah secukupnya",
-        "B": "Evaluasi kembali keberadaan produk",
-        "C": "Kurangi pembelian",
-    },
-    "Produk Grosir": {
-        "A": "Siapkan stok ketika terdapat pesanan",
-        "B": "Gabungkan penjualan dengan produk yang memiliki permintaan tinggi",
-        "C": "Kurangi pembelian",
+    "Produk Premium": {
+        "A": "Tetap sediakan stok, tetapi tidak perlu dalam jumlah banyak.",
+        "B": "Sediakan dalam jumlah terbatas, karena harganya cukup tinggi.",
+        "C": "Kurangi sedikit stoknya, tapi tetap sediakan karena pembeliannya tetap rutin walau jumlahnya kecil.",
     },
 }
-
 
 def get_rekomendasi(kondisi_penjualan, prioritas_abc):
     """
