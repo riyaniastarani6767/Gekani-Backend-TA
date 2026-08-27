@@ -119,6 +119,7 @@ def run_analysis():
 
     analysis_doc = {
         "nama_file": nama_file_asli,
+        "filepath": filepath,
         "periode_data": f"{tahun_awal}-{tahun_akhir}",
         "created_at": datetime.utcnow(),
         "user_id": user_id,
@@ -303,6 +304,75 @@ def delete_history(analysis_id):
         return jsonify({"error": "Gagal menghapus analisis."}), 500
 
     return jsonify({"status": "ok", "deleted_id": analysis_id}), 200
+
+@analysis_bp.route('/products/monthly', methods=['GET'])
+def get_products_monthly():
+    """
+    Query params:
+      bulan_awal, bulan_akhir: 'YYYY-MM' (opsional, bisa lintas tahun)
+      kategori, kondisi, prioritas, search: sama seperti /products
+
+    Menghitung pendapatan per produk PER BULAN langsung dari file CSV
+    mentah milik analisis TERAKHIR yang berhasil. Badge kategori/kondisi/
+    prioritas tetap diambil dari hasil_segmentasi analisis itu supaya
+    konteksnya konsisten dengan halaman Data Produk versi Ringkasan.
+    """
+    latest = get_db().analyses.find_one({"status": "Berhasil"}, sort=[("created_at", -1)])
+    if latest is None:
+        return jsonify({"error": "Belum ada analisis yang berhasil dijalankan."}), 404
+
+    filepath = latest.get('filepath')
+    if not filepath or not os.path.exists(filepath):
+        return jsonify({
+            "error": "File data mentah untuk analisis ini sudah tidak tersedia. "
+                     "Jalankan analisis baru untuk memakai fitur Perbandingan Bulanan."
+        }), 404
+
+    bulan_awal = request.args.get('bulan_awal')
+    bulan_akhir = request.args.get('bulan_akhir')
+    kategori = request.args.get('kategori')
+    kondisi = request.args.get('kondisi')
+    prioritas = request.args.get('prioritas')
+    search = request.args.get('search', '').lower()
+
+    try:
+        months, monthly_data = preprocessing.monthly_revenue_per_product(
+            filepath, bulan_awal=bulan_awal, bulan_akhir=bulan_akhir
+        )
+    except Exception as e:
+        return jsonify({"error": f"Gagal menghitung data bulanan: {str(e)}"}), 400
+
+    hasil_map = {p['nama_produk']: p for p in latest.get('hasil_segmentasi', [])}
+
+    products = []
+    for produk, per_bulan in monthly_data.items():
+        info = hasil_map.get(produk, {})
+        kategori_p = info.get('kategori', '-')
+        kondisi_p = info.get('kondisi_penjualan', '-')
+        prioritas_p = info.get('prioritas_abc', '-')
+
+        if kategori and kategori_p != kategori:
+            continue
+        if kondisi and kondisi_p != kondisi:
+            continue
+        if prioritas and prioritas_p != prioritas:
+            continue
+        if search and search not in produk.lower():
+            continue
+
+        products.append({
+            "nama_produk": produk,
+            "kategori": kategori_p,
+            "kondisi_penjualan": kondisi_p,
+            "prioritas_abc": prioritas_p,
+            "monthly": per_bulan,
+            "total": sum(per_bulan.values()),
+        })
+
+    products.sort(key=lambda p: p['total'], reverse=True)
+
+    return jsonify({"months": months, "products": products}), 200
+
 
 @analysis_bp.route('/ping', methods=['GET'])
 def ping():
