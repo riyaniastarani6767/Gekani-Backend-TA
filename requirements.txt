@@ -1,0 +1,7 @@
+flask
+flask-cors
+pymongo
+certifi
+python-dotenv
+pandas
+numpy

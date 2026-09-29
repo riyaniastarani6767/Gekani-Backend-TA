@@ -27,11 +27,9 @@ def initialize_centroids(data, k, seed=42):
         ])
         probs = distances / distances.sum()
         cumulative = np.cumsum(probs)
-        r = np.random.rand()
-        for idx, prob in enumerate(cumulative):
-            if r <= prob:
-                centroids.append(data[idx])
-                break
+        r = np.random.rand() * cumulative[-1]
+        idx = int(np.searchsorted(cumulative, r))
+        centroids.append(data[min(idx, len(data) - 1)])
     return np.array(centroids)
 
 
@@ -72,11 +70,20 @@ def compute_silhouette(data, labels):
         return 0.0
     scores = []
     for i in range(n):
-        same = data[labels == labels[i]]
-        a = np.mean([
-            euclidean_distance(data[i], p)
-            for p in same if not np.array_equal(p, data[i])
-        ]) if len(same) > 1 else 0
+        # a(i): rata-rata jarak ke anggota lain di cluster yang sama.
+        # Yang dikeluarkan HANYA titik i itu sendiri (berdasarkan indeks),
+        # bukan semua titik yang kebetulan koordinatnya sama.
+        same_mask = labels == labels[i]
+        same_mask[i] = False
+        same = data[same_mask]
+        if len(same) == 0:
+            # Sesuai definisi Rousseeuw (1987): s(i) = 0 bila klaster hanya
+            # berisi satu anggota (a(i) tidak terdefinisi).
+            scores.append(0.0)
+            continue
+        a = np.mean([euclidean_distance(data[i], p) for p in same])
+
+        # b(i): rata-rata jarak ke cluster tetangga terdekat
         b_vals = []
         for label in unique_labels:
             if label == labels[i]:
@@ -84,6 +91,7 @@ def compute_silhouette(data, labels):
             other = data[labels == label]
             b_vals.append(np.mean([euclidean_distance(data[i], p) for p in other]))
         b = min(b_vals) if b_vals else 0
+
         scores.append((b - a) / max(a, b) if max(a, b) != 0 else 0)
     return float(np.mean(scores))
 

@@ -14,7 +14,7 @@ DECISION_MATRIX = {
     "Produk Harian": {
         "A": "Stok harus selalu tersedia, karena produk sering dibeli.",
         "B": "Jaga stok tetap tersedia, sesuai kebutuhan pelanggan.",
-        "C": "Tetap sediakan stok karena tetap sering dicari, tapi coba naikkan sedikit harganya biar untungnya lebih besar.",
+        "C": "Tetap sediakan stok karena tetap sering dicari, tapi coba naikkan sedikit harganya agar kontribusi pendapatannya meningkat.",
     },
     "Produk Langka": {
         "A": "Tetap sediakan, meskipun jarang dibeli, karena harga barangnya tinggi.",

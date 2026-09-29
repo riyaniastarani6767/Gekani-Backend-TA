@@ -19,7 +19,7 @@ from app.services import preprocessing, kmeans, labeling, abc_analysis, decision
 
 analysis_bp = Blueprint('analysis', __name__)
 
-ALLOWED_EXTENSIONS = {'.csv', '.xlsx'}
+ALLOWED_EXTENSIONS = {'.csv'}
 
 
 def _allowed_file(filename):
@@ -30,7 +30,7 @@ def _allowed_file(filename):
 @analysis_bp.route('/upload', methods=['POST'])
 def upload_dataset():
     """
-    Terima file csv/xlsx, simpan ke UPLOAD_FOLDER, return path + info dasar.
+    Terima file csv, simpan ke UPLOAD_FOLDER, return path + info dasar.
     Frontend memakai path yang dikembalikan untuk memanggil /preview.
     """
     if 'file' not in request.files:
@@ -41,7 +41,7 @@ def upload_dataset():
         return jsonify({"error": "Nama file kosong."}), 400
 
     if not _allowed_file(file.filename):
-        return jsonify({"error": "Format file tidak didukung. Gunakan .csv atau .xlsx."}), 400
+        return jsonify({"error": "Format file tidak didukung. Gunakan .csv."}), 400
 
     upload_folder = current_app.config['UPLOAD_FOLDER']
     os.makedirs(upload_folder, exist_ok=True)
@@ -61,6 +61,7 @@ def upload_dataset():
         "nama_file_asli": file.filename,
         "columns": info["columns"],
         "total_rows": info["total_rows"],
+        "total_invoice": info["total_invoice"],
         "tahun_min": info["tahun_min"],
         "tahun_max": info["tahun_max"],
     }), 200
@@ -134,6 +135,7 @@ def run_analysis():
         # feature_cols_pca: 2 komponen utama hasil PCA, INI yang dipakai K-Means
         feature_cols_pca = df.attrs['pca_feature_cols']
         jumlah_transaksi = df.attrs['n_transaksi_setelah_cleaning']
+        jumlah_invoice = df.attrs['n_invoice']
 
         tren_bulanan = preprocessing.monthly_revenue(filepath, tahun_awal=tahun_awal, tahun_akhir=tahun_akhir)
 
@@ -179,6 +181,7 @@ def run_analysis():
             "status": "Berhasil",
             "jumlah_produk": len(hasil_segmentasi),
             "jumlah_transaksi": int(jumlah_transaksi),
+            "jumlah_invoice": int(jumlah_invoice),
             "optimal_k": optimal_result['optimal_k'],
             "silhouette_score": max(optimal_result['silhouette_data']['scores']),
             "hasil_segmentasi": hasil_segmentasi,
@@ -218,7 +221,7 @@ def dashboard_summary():
         },
         "komposisi_kondisi": {},
         "periode_data": latest.get('periode_data'),
-        "created_at": latest.get('created_at').isoformat() if latest.get('created_at') else None,
+        "created_at": latest.get('created_at').isoformat() + 'Z' if latest.get('created_at') else None,
         "tren_bulanan": latest.get('tren_bulanan', []),
     }
 
@@ -265,7 +268,7 @@ def get_history():
     for doc in docs:
         doc['_id'] = str(doc['_id'])
         if doc.get('created_at'):
-            doc['created_at'] = doc['created_at'].isoformat()
+            doc['created_at'] = doc['created_at'].isoformat() + 'Z'
     return jsonify({"history": docs}), 200
 
 
@@ -283,7 +286,7 @@ def get_history_detail(analysis_id):
 
     doc['_id'] = str(doc['_id'])
     if doc.get('created_at'):
-        doc['created_at'] = doc['created_at'].isoformat()
+        doc['created_at'] = doc['created_at'].isoformat() + 'Z'
 
     return jsonify(doc), 200
 # Tambahkan di app/blueprints/analysis.py, setelah route

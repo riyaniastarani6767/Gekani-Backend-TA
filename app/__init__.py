@@ -4,8 +4,9 @@ Application factory: bikin instance Flask, load config, init MongoDB,
 register blueprint.
 """
 
-from flask import Flask
+from flask import Flask, jsonify
 from flask_cors import CORS
+from werkzeug.exceptions import RequestEntityTooLarge
 
 from app.config import Config
 from app.extensions import init_mongo
@@ -31,6 +32,12 @@ def create_app():
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(analysis_bp, url_prefix='/api')
+
+    # File melebihi MAX_CONTENT_LENGTH (50MB): kembalikan JSON supaya
+    # frontend bisa menampilkan pesan yang jelas.
+    @app.errorhandler(RequestEntityTooLarge)
+    def file_terlalu_besar(e):
+        return jsonify({"error": "Ukuran file melebihi batas maksimal 50MB."}), 413
 
     logger.info("Aplikasi Flask siap.")
 

@@ -22,4 +22,5 @@ logs/
 .vscode/
 
 # macOS
-.DS_Store
+.DS_Store.pytest_cache/
+sample_data/uji_file_besar.csv

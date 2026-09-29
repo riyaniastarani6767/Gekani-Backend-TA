@@ -107,6 +107,7 @@ def aggregate_data(filepath, tahun_awal=None, tahun_akhir=None):
         df = df[df['tahun'] <= int(tahun_akhir)]
 
     n_setelah_cleaning = len(df)
+    n_invoice = int(df['no_invoice'].nunique())
     logger.info(f"Setelah filter periode: {n_setelah_cleaning} baris.")
 
     if df.empty:
@@ -203,6 +204,7 @@ def aggregate_data(filepath, tahun_awal=None, tahun_akhir=None):
     agg_df.attrs['winsorize_upper'] = WINSORIZE_UPPER
     agg_df.attrs['n_transaksi_awal'] = n_awal
     agg_df.attrs['n_transaksi_setelah_cleaning'] = n_setelah_cleaning
+    agg_df.attrs['n_invoice'] = n_invoice
     agg_df.attrs['n_duplikat_dihapus'] = n_duplikat
     agg_df.attrs['n_missing_dihapus'] = n_missing
     agg_df.attrs['n_negatif_dihapus'] = n_negatif
@@ -227,6 +229,7 @@ def preview_data(filepath, n=10):
         "columns": df.columns.tolist(),
         "sample_rows": sample_rows,
         "total_rows": len(df),
+        "total_invoice": int(df['no_invoice'].nunique()) if 'no_invoice' in df.columns else None,
         "tahun_min": int(tahun_series.min()) if len(tahun_series) > 0 else None,
         "tahun_max": int(tahun_series.max()) if len(tahun_series) > 0 else None,
     }

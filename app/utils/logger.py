@@ -16,7 +16,7 @@ import os
 from datetime import datetime
 
 SERVICE_LOGGER_NAMES = [
-    "preprocessing", "kmeans", "labeling", "abc_analysis", "decision_rules"
+    "preprocessing", "pca", "kmeans", "labeling", "abc_analysis", "decision_rules"
 ]
 
 
