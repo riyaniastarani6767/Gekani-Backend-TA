@@ -30,9 +30,10 @@ CLUSTER_FEATURES = [
 # Fitur yang ditransformasi log1p (semua fitur final bersifat right-skewed).
 LOG_FEATURES = list(CLUSTER_FEATURES)
 
-# Batas persentil winsorizing, dipilih dari pengujian empiris (grid search
-# persentil 5-30) yang menghasilkan Silhouette Score dan keseimbangan
-# klaster terbaik secara bersamaan.
+# Batas persentil winsorizing, dipilih dari uji sensitivitas persentil 5-30
+# (lihat notebooks/analisis_model.ipynb bagian 3). Di bawah P17 hasil tidak
+# stabil (K berubah-ubah, ada klaster sangat kecil); P17 dipilih sebagai
+# batas PALING LONGGAR di zona stabil agar data asli paling sedikit diubah.
 WINSORIZE_LOWER = 0.17
 WINSORIZE_UPPER = 0.83
 
