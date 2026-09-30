@@ -80,8 +80,16 @@ def _project_archetypes_to_pca(archetypes_raw, df, feature_cols):
     standarisasi (pakai scale_mean/scale_std tersimpan) -> proyeksi PCA
     (pakai pca_components tersimpan).
     """
-    col_mins = df[feature_cols].min().values
-    archetypes_log = np.log1p(archetypes_raw - col_mins + 1)
+  # Langkah 1 -- winsorizing dengan batas persentil yang SAMA dengan data
+    # (preprocessing.py), supaya arketipe tidak berada di luar rentang data.
+    lower = df[feature_cols].quantile(df.attrs['winsorize_lower']).values
+    upper = df[feature_cols].quantile(df.attrs['winsorize_upper']).values
+    archetypes_clipped = np.clip(archetypes_raw, lower, upper)
+
+    # Langkah 2 -- log1p dengan nilai minimum SETELAH winsorizing (sama
+    # seperti yang dipakai pada data saat preprocessing).
+    col_mins = df[feature_cols].clip(lower=lower, upper=upper, axis=1).min().values
+    archetypes_log = np.log1p(archetypes_clipped - col_mins + 1)
 
     scale_mean = np.array(df.attrs['scale_mean'])
     scale_std = np.array(df.attrs['scale_std'])

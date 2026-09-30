@@ -89,3 +89,13 @@ def test_produk_langka_paling_jarang_dibeli_dan_termahal(hasil_labeling):
 def test_premium_lebih_mahal_dari_andalan(hasil_labeling):
     m = hasil_labeling.groupby('kondisi_penjualan')['avg_harga'].median()
     assert m['Produk Premium'] > m['Produk Andalan'] > m['Produk Harian']
+
+
+def test_arketipe_diproyeksikan_dengan_pipeline_yang_sama(df_agregat):
+    # Jika data asli dilewatkan ke fungsi proyeksi arketipe, hasilnya harus
+    # sama persis dengan koordinat PCA data -- bukti arketipe dan data
+    # melewati winsorizing -> log -> standarisasi -> PCA yang identik.
+    from app.services import labeling
+    fitur = df_agregat.attrs['cluster_features']
+    proyeksi = labeling._project_archetypes_to_pca(df_agregat[fitur].values, df_agregat, fitur)
+    assert np.allclose(proyeksi, df_agregat[['pc1_scaled', 'pc2_scaled']].values)
